@@ -21,6 +21,47 @@ This Python script automates the transfer of movie ratings from IMDb to Letterbo
 * **Detailed Logging:** Provides comprehensive logs for easy debugging and monitoring.
 * **Robust Error Handling:** Prevents unexpected crashes with informative error messages.
 
+## Installation and Running
+
+**Prerequisites**
+
+*   **Python:** Ensure you have Python 3.7 or later installed.  Check by running `python3 --version` in your terminal.
+*   **Firefox:** Install the Firefox web browser. This is essential for the script as it uses the Firefox WebDriver.
+*   **geckodriver:** [Download the latest geckodriver](https://github.com/mozilla/geckodriver/releases) that matches your operating system and Firefox version. Extract it and add it to your system's PATH.  Alternatively, place the executable in the same directory as the script.
+*   **uBlock Origin:** Install the uBlock Origin extension for Firefox from the official Mozilla Add-ons store: [https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/](https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/). Ensure it's enabled and updated to block unnecessary elements that might interfere with web scraping.
+*   **IMDb User ID:** Locate your IMDb User ID from your IMDb profile URL (e.g., `https://www.imdb.com/user/urxxxxxxxxxxxx/`). The user ID is the part after `/user/`.
+
+**Download and Run**
+
+1.  **Download the script:**
+    *   Download as a ZIP: [https://github.com/Kaos599/IMDB-to-Lettexboxd-Scheduler/archive/refs/heads/main.zip](https://github.com/Kaos599/IMDB-to-Lettexboxd-Scheduler/archive/refs/heads/main.zip)
+    *   Clone the repository: `git clone https://github.com/Kaos599/IMDB-to-Lettexboxd-Scheduler.git`
+
+2.  **Install Libraries:**
+    Open a terminal or command prompt, navigate to the directory where you downloaded/cloned the script, and install the required Python libraries:
+
+    ```bash
+    pip install selenium pyautogui pywin32
+    ```
+
+3.  **Configuration:**
+
+    *   Open `script.py` in a text editor.
+    *   Find the "Configuration Section" and replace placeholders with your credentials:
+
+        *   `IMDB_EMAIL`: Your IMDb email.
+        *   `IMDB_PASSWORD`: Your IMDb password.
+        *   `LETTERBOXD_EMAIL`: Your Letterboxd email.
+        *   `LETTERBOXD_PASSWORD`: Your Letterboxd password.
+        *   `IMDB_USER_ID`: Your IMDb User ID (e.g., ur123456789).
+        *   `DOWNLOAD_DIR`: The directory for downloads. **Ensure this directory exists before running.**
+        *   `HEADLESS_MODE`: Set to `True` for headless mode (no visible browser); `False` otherwise.
+        *   `PYTHON_EXECUTABLE`: Full path to your Python executable (especially important if using virtual environments).
+        *   `SCRIPT_PATH`: Full path to the script (`script.py`).
+
+4.  **Verify uBlock Origin:** Ensure `ublock_origin-latest.xpi` (or the correct version downloaded from the Add-ons store) is in the same directory as the script.
+
+5.  **Run:** From your terminal in the script's directory, run: `python script.py` (or `python3 script.py`).  The script will guide you through scheduling (Windows) or running immediately.
 ## Requirements
 
 * **Python 3.7+:** Ensure you have Python 3.7 or a later version installed.
