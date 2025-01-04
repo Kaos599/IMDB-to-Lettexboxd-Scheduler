@@ -21,6 +21,17 @@ This Python script automates the transfer of movie ratings from IMDb to Letterbo
 * **Detailed Logging:** Provides comprehensive logs for easy debugging and monitoring.
 * **Robust Error Handling:** Prevents unexpected crashes with informative error messages.
 
+## Requirements
+
+* **Python 3.7+:** Ensure you have Python 3.7 or a later version installed.
+* **Libraries:** Install required libraries using `pip install selenium pyautogui pywin32`
+* **Firefox WebDriver:** Download the `geckodriver` executable and add it to your system's PATH.  See [GeckoDriver Releases](https://github.com/mozilla/geckodriver/releases)
+* **uBlock Origin:**  Install the uBlock Origin extension for Firefox (`ublock_origin-latest.xpi`). This helps in blocking ads and other unnecessary elements that may cause problems with the web scraping process.
+* **Credentials:**  Your IMDb and Letterboxd email/password, and your IMDb user ID.
+
+
+
+
 ## Installation and Running
 
 **Prerequisites**
@@ -62,14 +73,6 @@ This Python script automates the transfer of movie ratings from IMDb to Letterbo
 4.  **Verify uBlock Origin:** Ensure `ublock_origin-latest.xpi` (or the correct version downloaded from the Add-ons store) is in the same directory as the script.
 
 5.  **Run:** From your terminal in the script's directory, run: `python script.py` (or `python3 script.py`).  The script will guide you through scheduling (Windows) or running immediately.
-## Requirements
-
-* **Python 3.7+:** Ensure you have Python 3.7 or a later version installed.
-* **Libraries:** Install required libraries using `pip install selenium pyautogui pywin32`
-* **Firefox WebDriver:** Download the `geckodriver` executable and add it to your system's PATH.  See [GeckoDriver Releases](https://github.com/mozilla/geckodriver/releases)
-* **uBlock Origin:**  Install the uBlock Origin extension for Firefox (`ublock_origin-latest.xpi`). This helps in blocking ads and other unnecessary elements that may cause problems with the web scraping process.
-* **Credentials:**  Your IMDb and Letterboxd email/password, and your IMDb user ID.
-
 
 ## Usage
 
