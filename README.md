@@ -1,5 +1,7 @@
 # IMDB-to-Lettexboxd-Scheduler
 
+![Image](https://github.com/user-attachments/assets/5ccd3a74-2da4-4617-8a66-cde90ba825c9)
+
 [![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/)
 [![Selenium](https://img.shields.io/badge/selenium-%20-4682B4.svg)](https://www.selenium.dev/)
 [![PyAutoGUI](https://img.shields.io/badge/pyautogui-0.9.53-brightgreen)](https://pyautogui.readthedocs.io/en/latest/)
