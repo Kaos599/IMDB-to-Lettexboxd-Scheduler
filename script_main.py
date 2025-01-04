@@ -1,3 +1,10 @@
+"""IMDb to Letterboxd Ratings Importer
+
+This script automates the transfer of movie ratings from IMDb to Letterboxd.
+It handles dynamic web elements and mimics human behavior to avoid bot detection.
+Utilizes Selenium for web automation and PyAutoGUI for OS-level interactions.
+"""
+
 import os
 import time
 import csv
@@ -17,43 +24,55 @@ The URL of your profile page will look something like this: "https://www.imdb.co
 In this example, your IMDb User ID would be "urxxxxxxxxxxxx". 
 Make sure to copy the part after /user/ and before the final /."""
 
-# Configuration
-IMDB_EMAIL = "your_imdb_email"  # Replace with your IMDb email
-IMDB_PASSWORD = "your_imdb_password" # Replace with your IMDb password
-LETTERBOXD_EMAIL = "your_letterboxd_email" # Replace with your Letterboxd email
-LETTERBOXD_PASSWORD = "your_letterboxd_password" # Replace with your Letterboxd password
-IMDB_USER_ID = "your_imdb_user_id" # Replace with your IMDB user ID
-DOWNLOAD_DIR = r"\downloads" # Path to download directory
-HEADLESS_MODE = True  # Set to False for visible browser
+# Configuration Section
+# Replace placeholder values with your actual credentials and desired settings.
+IMDB_EMAIL = "your_imdb_email"  # Your IMDb login email address.
+IMDB_PASSWORD = "your_imdb_password"  # Your IMDb login password.
+LETTERBOXD_EMAIL = "your_letterboxd_email"  # Your Letterboxd login email address.
+LETTERBOXD_PASSWORD = "your_letterboxd_password"  # Your Letterboxd login password.
+IMDB_USER_ID = "your_imdb_user_id"  # Your IMDb user ID, found on your profile page URL.
+DOWNLOAD_DIR = r"downloads"  # The directory where downloaded files will be saved. Relative or absolute path.
+HEADLESS_MODE = True  # Set to True to run the browser in the background, False to see the browser window.
 
+# Scheduled Task Configuration (Windows Only)
+TASK_NAME = "IMDb_to_Letterboxd_Task"  # The name of the scheduled task in Windows Task Scheduler.
+PYTHON_EXECUTABLE = r"C:\Path\To\Your\python.exe"  # The full path to your Python executable.
+SCRIPT_PATH = r"C:\Path\To\Your\Script.py"  # The full path to this Python script.
+SCHEDULED_TIME = "10:00"  # The time of day to run the scheduled task (in 24-hour format, e.g., "14:30").
 
-# Scheduled Task Configuration
-TASK_NAME = "IMDb_to_Letterboxd_Task"
-PYTHON_EXECUTABLE = r"C:\Path\To\Your\python.exe" # Path to Python executable.
-SCRIPT_PATH = r"C:\Path\To\Your\Script.py"  # Path to this script
-SCHEDULED_TIME = "10:00"  # Scheduled time in 24-hour format (e.g., "14:30" for 2:30 PM)
-
-
-
-# Helper Functions
 # Logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Helper Functions
+def random_delay(min_delay: int = 2, max_delay: int = 5) -> None:
+    """
+    Introduce random delays to mimic human behavior.
 
-def random_delay(min_delay=2, max_delay=5):
-    """Introduce random delays to mimic human behavior."""
+    Args:
+        min_delay: The minimum delay in seconds.
+        max_delay: The maximum delay in seconds.
+    """
     delay = random.uniform(min_delay, max_delay)
     time.sleep(delay)
 
-def random_scroll(driver):
-    """Perform random scrolls to mimic human behavior."""
+def random_scroll(driver: webdriver.Firefox) -> None:
+    """
+    Perform random scrolls to mimic human behavior.
+
+    Args:
+        driver: The Selenium WebDriver instance.
+    """
     for _ in range(random.randint(1, 3)):
         driver.execute_script(f"window.scrollBy(0, {random.randint(50, 200)})")
         random_delay(0.5, 1.5)
 
-def random_clicks(driver):
-    """Perform random clicks on the page to mimic human behavior."""
+def random_clicks(driver: webdriver.Firefox) -> None:
+    """
+    Perform random clicks on the page to mimic human behavior.
+
+    Args:
+        driver: The Selenium WebDriver instance.
+    """
     body = driver.find_element(By.TAG_NAME, "body")
     for _ in range(random.randint(0, 2)):
         try:
@@ -67,48 +86,65 @@ def random_clicks(driver):
         except Exception as e:
             logging.error(f"Error during random click: {e}")
 
-def setup_driver():
-    """Setup Selenium WebDriver (Firefox)."""
+def setup_driver() -> webdriver.Firefox:
+    """
+    Setup Selenium WebDriver (Firefox) with specified options and extensions.
 
-    extension_path = 'ublock_origin-1.61.2.xpi'
+    Returns:
+        The configured Firefox WebDriver instance.
+    """
+    extension_path = 'ublock_origin-1.61.2.xpi'  # Path to the uBlock Origin extension.
     options = webdriver.FirefoxOptions()
     profile = webdriver.FirefoxProfile()
 
     if HEADLESS_MODE:
         options.add_argument("--headless")
 
-    profile.set_preference("browser.download.folderList", 2)
-    profile.set_preference("browser.download.manager.showWhenStarting", False)
-    profile.set_preference("browser.download.dir", os.path.abspath(DOWNLOAD_DIR))
-    profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/csv")
+    # Configure download preferences to avoid prompts
+    profile.set_preference("browser.download.folderList", 2)  # Use custom download directory
+    profile.set_preference("browser.download.manager.showWhenStarting", False)  # Don't show download manager
+    profile.set_preference("browser.download.dir", os.path.abspath(DOWNLOAD_DIR))  # Set download directory
+    profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/csv")  # Auto-save CSV files
     options.profile = profile
     driver = webdriver.Firefox(options=options)
-    driver.install_addon(extension_path, temporary=True)
+    driver.install_addon(extension_path, temporary=True)  # Install uBlock Origin
     return driver
 
-def login_to_imdb(driver):
-    """Log in to IMDb."""
+def login_to_imdb(driver: webdriver.Firefox) -> bool:
+    """
+    Log in to IMDb using the provided credentials.
+
+    Args:
+        driver: The Selenium WebDriver instance.
+
+    Returns:
+        True if login is successful, False otherwise.
+    """
     logging.info("Navigating to IMDb login page...")
     driver.get("https://www.imdb.com/registration/signin")
     random_delay()
 
     try:
+        # Find and click the IMDb sign-in button
         signin_imdb_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.CLASS_NAME, "list-group-item"))
         )
         signin_imdb_button.click()
         random_delay()
 
+        # Enter email
         email_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.ID, "ap_email"))
         )
         email_input.send_keys(IMDB_EMAIL)
         random_delay()
 
+        # Enter password
         password_input = driver.find_element(By.ID, "ap_password")
         password_input.send_keys(IMDB_PASSWORD)
         random_delay()
 
+        # Submit login form
         signin_submit_button = driver.find_element(By.ID, "signInSubmit")
         signin_submit_button.click()
         random_delay()
@@ -118,17 +154,31 @@ def login_to_imdb(driver):
         logging.error("Login to IMDb failed: Could not find login elements.")
         return False
 
-def navigate_to_imdb_ratings(driver):
-    """Navigate to the user ratings page on IMDb."""
+def navigate_to_imdb_ratings(driver: webdriver.Firefox) -> None:
+    """
+    Navigate to the user ratings page on IMDb.
+
+    Args:
+        driver: The Selenium WebDriver instance.
+    """
     ratings_url = f"https://www.imdb.com/user/{IMDB_USER_ID}/ratings/"
     logging.info(f"Navigating to IMDb ratings page: {ratings_url}")
     driver.get(ratings_url)
     random_delay()
 
-def initiate_imdb_export(driver):
-    """Initiate the export of IMDb ratings."""
+def initiate_imdb_export(driver: webdriver.Firefox) -> bool:
+    """
+    Initiate the export of IMDb ratings.
+
+    Args:
+        driver: The Selenium WebDriver instance.
+
+    Returns:
+        True if export initiation is successful, False otherwise.
+    """
     logging.info("Initiating IMDb ratings export...")
     try:
+        # Find and click the export button
         export_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//span[contains(text(),'Export')]"))
         )
@@ -140,14 +190,19 @@ def initiate_imdb_export(driver):
         logging.error("Failed to initiate IMDb export: Export button not found.")
         return False
 
-def wait_for_download_completion(download_dir, timeout=60):
+def wait_for_download_completion(download_dir: str, timeout: int = 60) -> str:
     """
     Wait for a .csv file to complete downloading in the specified directory.
-    Returns the path to the downloaded file.
 
     Args:
-        download_dir (str): Directory to monitor for downloads
-        timeout (int): Maximum time to wait in seconds
+        download_dir: Directory to monitor for downloads.
+        timeout: Maximum time to wait in seconds.
+
+    Returns:
+        The path to the downloaded file.
+
+    Raises:
+        TimeoutError: If the download does not complete within the timeout.
     """
     logging.info(f"Waiting for download to complete in: {download_dir}")
 
@@ -166,7 +221,7 @@ def wait_for_download_completion(download_dir, timeout=60):
                 key=os.path.getmtime
             )
 
-            # Ensure file size has stabilized
+            # Ensure file size has stabilized to confirm download completion
             size = os.path.getsize(latest_csv)
             time.sleep(1)  # Wait a second
             if size == os.path.getsize(latest_csv):
@@ -177,8 +232,16 @@ def wait_for_download_completion(download_dir, timeout=60):
 
     raise TimeoutError("Download did not complete within the specified timeout")
 
-def monitor_imdb_export_status(driver):
-    """Monitor the export status and wait for download completion."""
+def monitor_imdb_export_status(driver: webdriver.Firefox) -> str or None:
+    """
+    Monitor the export status on IMDb and wait for the download to become ready.
+
+    Args:
+        driver: The Selenium WebDriver instance.
+
+    Returns:
+        The path to the downloaded CSV file if successful, None otherwise.
+    """
     exports_url = "https://www.imdb.com/exports/"
     logging.info(f"Monitoring IMDb export status at: {exports_url}")
     driver.get(exports_url)
@@ -189,15 +252,17 @@ def monitor_imdb_export_status(driver):
 
     while attempt < max_attempts:
         try:
+            # Wait for the list of exports to load
             list_content = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, 'div[data-testid="list-page-mc-list-content"]'))
             )
 
+            # Find all export items
             export_items = list_content.find_elements(By.CSS_SELECTOR, 'li[data-testid="user-ll-item"]')
 
             if export_items:
                 first_item = export_items[0]
-                try:  # Try to find the Ready button, handle exception if not found
+                try:  # Try to find the Ready button
                     ready_button = first_item.find_element(
                         By.CSS_SELECTOR,
                         'button[data-testid="export-status-button"].READY'
@@ -207,7 +272,7 @@ def monitor_imdb_export_status(driver):
                     random_delay()
                     ready_button.click()
 
-                    # Wait for download to complete and get the file path
+                    # Wait for download to complete
                     try:
                         downloaded_file = wait_for_download_completion(DOWNLOAD_DIR)
                         if downloaded_file:
@@ -219,14 +284,13 @@ def monitor_imdb_export_status(driver):
                 except NoSuchElementException:
                     print("Ready button not available yet, Trying again")
 
-            else:  # Handle empty export_items (no exports yet)
+            else:  # Handle case where no exports are listed
                 print("Ready button not available yet, Trying again")
-
 
             attempt += 1
             logging.info(f"Export not ready yet. Attempt {attempt}/{max_attempts}")
             random_delay(10, 15)
-            driver.refresh()
+            driver.refresh()  # Refresh the page to check for updates
             random_delay()
 
         except Exception as e:
@@ -238,13 +302,22 @@ def monitor_imdb_export_status(driver):
     logging.error("Maximum attempts reached without finding a ready export")
     return None
 
-def login_to_letterboxd(driver):
-    """Log in to Letterboxd with enhanced error handling and debugging."""
+def login_to_letterboxd(driver: webdriver.Firefox) -> bool:
+    """
+    Log in to Letterboxd using the provided credentials.
+
+    Args:
+        driver: The Selenium WebDriver instance.
+
+    Returns:
+        True if login is successful, False otherwise.
+    """
     logging.info("Navigating to Letterboxd login page...")
     driver.get("https://letterboxd.com/settings/data/")
     random_delay()
 
     try:
+        # Find and enter the username
         username_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.ID, "field-username"))
         )
@@ -252,6 +325,7 @@ def login_to_letterboxd(driver):
         username_input.send_keys(LETTERBOXD_EMAIL)
         random_delay(1, 2)
 
+        # Find and enter the password
         password_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.ID, "field-password"))
         )
@@ -259,6 +333,7 @@ def login_to_letterboxd(driver):
         password_input.send_keys(LETTERBOXD_PASSWORD)
         random_delay(1, 2)
 
+        # Find and click the login button
         login_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//button[@type='submit']"))
         )
@@ -266,30 +341,37 @@ def login_to_letterboxd(driver):
         login_button.click()
         random_delay(2, 3)
 
+        # Verify successful login by checking for an element on the account settings page
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//h1[@class='title-hero -textleft js-hide-in-app' and text()='Account Settings']"))  # Check for profile after login
+            EC.presence_of_element_located((By.XPATH, "//h1[@class='title-hero -textleft js-hide-in-app' and text()='Account Settings']"))
         )
 
         logging.info("Successfully logged into Letterboxd")
 
-        # Navigate to the import page *after* successful login
+        # Navigate to the import page after successful login
         driver.get("https://letterboxd.com/import/")
         logging.info("Navigated to Letterboxd import page.")
 
         return True
 
     except Exception as e:
-        logging.exception(f"Failed to login to Letterboxd: {e}") # More detailed error logging
+        logging.exception(f"Failed to login to Letterboxd: {e}")
         return False
 
-def get_latest_csv_from_downloads():
-    """Get the path of the most recently downloaded CSV file."""
+def get_latest_csv_from_downloads() -> str or None:
+    """
+    Get the path of the most recently downloaded CSV file from the downloads directory.
+
+    Returns:
+        The path to the latest CSV file, or None if no CSV files are found.
+    """
     try:
         csv_files = [f for f in os.listdir(DOWNLOAD_DIR) if f.endswith('.csv')]
         if not csv_files:
             logging.error("No CSV files found in downloads directory")
             return None
 
+        # Find the CSV file with the most recent modification time
         latest_csv = max([os.path.join(DOWNLOAD_DIR, f) for f in csv_files],
                             key=os.path.getmtime)
         logging.info(f"Found latest CSV file: {latest_csv}")
@@ -298,8 +380,18 @@ def get_latest_csv_from_downloads():
         logging.error(f"Error finding latest CSV file: {e}")
         return None
 
-def wait_for_element_with_text(driver, text, timeout=10):
-    """Wait for an element containing specific text to appear."""
+def wait_for_element_with_text(driver: webdriver.Firefox, text: str, timeout: int = 10) -> webdriver.remote.webelement.WebElement or None:
+    """
+    Wait for an element containing specific text to appear.
+
+    Args:
+        driver: The Selenium WebDriver instance.
+        text: The text to search for within the element.
+        timeout: The maximum time to wait in seconds.
+
+    Returns:
+        The WebElement if found, None otherwise.
+    """
     try:
         return WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((By.XPATH, f"//*[contains(text(), '{text}')]"))
@@ -307,16 +399,25 @@ def wait_for_element_with_text(driver, text, timeout=10):
     except TimeoutException:
         return None
 
-def import_to_letterboxd(driver, csv_path):
-    """Enhanced function to import ratings to Letterboxd with proper waiting and verification."""
+def import_to_letterboxd(driver: webdriver.Firefox, csv_path: str) -> bool:
+    """
+    Import ratings to Letterboxd using the downloaded CSV file.
+
+    Args:
+        driver: The Selenium WebDriver instance.
+        csv_path: The path to the downloaded IMDb ratings CSV file.
+
+    Returns:
+        True if the import is successful, False otherwise.
+    """
     logging.info("Starting Letterboxd import process...")
 
     try:
-        # Navigate to import page
+        # Navigate to the IMDb import section on the import page
         driver.get("https://letterboxd.com/import/#imdb-import")
         random_delay(2, 3)
 
-        # Check for the intermittent "Continue" button and click it if present
+        # Check for and handle an intermittent "Continue" button
         try:
             continue_button = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, '_2Sbg_-vS') and contains(@class, '_1CPr_04v') and contains(@class, 'f5CXro_f') and contains(@class, '_9eRJjhym') and text()='Continue']"))
@@ -329,12 +430,14 @@ def import_to_letterboxd(driver, csv_path):
         except Exception as e:
             logging.error(f"Error while handling the 'Continue' button: {e}")
 
+        # Find and click the link to select the IMDb CSV file
         select_file_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//a[contains(@href, '#imdb-import')]"))
         )
         select_file_button.click()
         random_delay()
 
+        # Locate the file input element and send the path to the CSV file
         file_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']"))
         )
@@ -342,11 +445,11 @@ def import_to_letterboxd(driver, csv_path):
         logging.info("CSV file selected for upload")
 
         time.sleep(2)  # Give time for the file dialog to open
-        pyautogui.press('enter')  # Close the file dialog
+        pyautogui.press('enter')  # Simulate pressing Enter to close the file dialog
         time.sleep(1)
         pyautogui.press('enter')
 
-        # Wait for matching process to complete
+        # Wait for the matching process to complete
         matching_complete = WebDriverWait(driver, 300).until(
             EC.presence_of_element_located((By.XPATH, "//strong[contains(text(), 'Matching complete')]"))
         )
@@ -360,12 +463,12 @@ def import_to_letterboxd(driver, csv_path):
         import_button.click()
         logging.info("Started importing films")
 
-        # Wait for import completion message
+        # Wait for the import completion message
         saved_films_element = WebDriverWait(driver, 300).until(
             EC.presence_of_element_located((By.XPATH, "//strong[contains(text(), 'Saved')]"))
         )
 
-        # Extract number of saved films
+        # Extract the number of saved films from the completion message
         saved_films_text = saved_films_element.text
         num_films = ''.join(filter(str.isdigit, saved_films_text))
         logging.info(f"Successfully imported {num_films} films to Letterboxd")
@@ -375,20 +478,29 @@ def import_to_letterboxd(driver, csv_path):
         logging.error(f"Error during Letterboxd import: {e}")
         return False
 
-def schedule_task(task_name, python_path, script_path, scheduled_time, task_action="create"):
+def schedule_task(task_name: str, python_path: str, script_path: str, scheduled_time: str, task_action: str = "create") -> None:
+    """
+    Schedule or modify a task in Windows Task Scheduler.
 
+    Args:
+        task_name: The name of the scheduled task.
+        python_path: The path to the Python executable.
+        script_path: The path to the Python script.
+        scheduled_time: The time to run the task (HH:MM).
+        task_action: "create" to create, "update" to modify, "delete" to remove the task.
+    """
     if task_action == "create":
         command = f'schtasks /create /tn "{task_name}" /tr "{python_path} {script_path}" /sc daily /st {scheduled_time} /f'
-
     elif task_action == "update":
         command = f'schtasks /change /tn "{task_name}" /tr "{python_path} {script_path}" /sc daily /st {scheduled_time} /f'
-
     elif task_action == "delete":
-        command = f'schtasks /delete /tn "{task_name}" /f' # Command to delete the task
-        
+        command = f'schtasks /delete /tn "{task_name}" /f'  # Command to delete the task
+    else:
+        logging.error(f"Invalid task action: {task_action}")
+        return
 
     try:
-        subprocess.run(command, check=True, shell=True)  # Run the command
+        subprocess.run(command, check=True, shell=True)  # Execute the schtasks command
         if task_action == "delete":
             print(f"Task '{task_name}' deleted successfully.")
         elif task_action == "create":
@@ -400,21 +512,29 @@ def schedule_task(task_name, python_path, script_path, scheduled_time, task_acti
         print(f"Error scheduling task: {e}")
         logging.error(f"Error scheduling task: {e}")
 
-def check_if_task_exists(task_name):
-    """Checks if a scheduled task with the given name exists."""
+def check_if_task_exists(task_name: str) -> bool:
+    """
+    Check if a scheduled task with the given name exists.
+
+    Args:
+        task_name: The name of the scheduled task to check.
+
+    Returns:
+        True if the task exists, False otherwise.
+    """
     try:
         command = f'schtasks /query /tn "{task_name}"'
-        subprocess.run(command, check=True, shell=True, stdout=subprocess.DEVNULL) # Suppress output
-        return True # Task exists
+        subprocess.run(command, check=True, shell=True, stdout=subprocess.DEVNULL)  # Suppress output
+        return True  # Task exists
 
     except subprocess.CalledProcessError:
         return False  # Task does not exist
 
-
-
 def main():
-    """Main function with enhanced download monitoring and file deletion."""
-    os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+    """
+    Main function to execute the IMDb to Letterboxd ratings import process.
+    """
+    os.makedirs(DOWNLOAD_DIR, exist_ok=True)  # Ensure the download directory exists
     driver = setup_driver()
     downloaded_file = None  # Initialize to handle potential errors
 
@@ -440,7 +560,7 @@ def main():
         if not login_to_letterboxd(driver):
             raise Exception("Failed to log in to Letterboxd")
 
-        if not import_to_letterboxd(driver, downloaded_file): 
+        if not import_to_letterboxd(driver, downloaded_file):
             raise Exception("Failed to import ratings to Letterboxd")
 
         logging.info("Successfully completed the entire import process!")
@@ -459,12 +579,11 @@ def main():
                 logging.error(f"Error deleting file: {e}")
         driver.quit()
 
-
 if __name__ == "__main__":
-    TASK_EXISTS = check_if_task_exists(TASK_NAME) # Check if the task already exists
+    TASK_EXISTS = check_if_task_exists(TASK_NAME)  # Check if the task already exists
 
     if TASK_EXISTS:
-        #If already exists then ask the user if update or delete the scheduled task.
+        # If task already exists, ask the user to update or delete
         choice = input("A scheduled task with this name already exists. Do you want to update (u) or delete (d) it?: ").lower()
         if choice == 'u':
             schedule_task(TASK_NAME, PYTHON_EXECUTABLE, SCRIPT_PATH, SCHEDULED_TIME, task_action="update")
@@ -472,9 +591,9 @@ if __name__ == "__main__":
             schedule_task(TASK_NAME, PYTHON_EXECUTABLE, SCRIPT_PATH, SCHEDULED_TIME, task_action="delete")
 
     else:
-        schedule_task(TASK_NAME, PYTHON_EXECUTABLE, SCRIPT_PATH, SCHEDULED_TIME) # Create if doesn't exist
+        schedule_task(TASK_NAME, PYTHON_EXECUTABLE, SCRIPT_PATH, SCHEDULED_TIME)  # Create if doesn't exist
 
-    #Option to run the script directly after creating/modifying the scheduled task
+    # Option to run the script directly after creating/modifying the scheduled task
     run_now = input("Do you want to run the script now? (y/n): ").lower()
     if run_now == 'y':
         main()
