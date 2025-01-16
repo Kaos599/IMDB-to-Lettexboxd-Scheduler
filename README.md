@@ -110,4 +110,4 @@ The script streamlines scheduled execution:
 
 ## Disclaimer
 
-This script is provided as-is. It depends on the structure of IMDb and Letterboxd, which may change, affecting compatibility.  Use it at your own risk.
+This script is provided as-is. It depends on the structure of IMDb and Letterboxd, which may change, affecting compatibility.  Use it at your own risk!.
